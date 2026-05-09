@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HMI 英雄神話指標 ─ アーキタイプ診断</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Cinzel:wght@400;700&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  :root {
+    --ink: #1a1410;
+    --parchment: #f5f0e8;
+    --gold: #b8860b;
+    --gold-light: #d4a843;
+    --crimson: #8b1a1a;
+    --sage: #4a6741;
+    --slate: #3d4a5c;
+    --shadow: rgba(26,20,16,0.15);
+    --progress-bg: #e8e0d0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: 'Noto Serif JP', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── 装飾背景 ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(184,134,11,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── ヘッダー ─── */
+  .header {
+    text-align: center;
+    padding: 60px 20px 40px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-ornament {
+    font-size: 1.2rem;
+    color: var(--gold);
+    letter-spacing: 0.5em;
+    margin-bottom: 16px;
+    font-family: 'Cinzel', serif;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.85rem;
+    color: var(--gold);
+    letter-spacing: 0.3em;
+    margin-bottom: 24px;
+  }
+
+  .header-desc {
+    max-width: 600px;
+    margin: 0 auto;
+    font-size: 0.9rem;
+    line-height: 1.9;
+    color: #4a3f35;
+  }
+
+  /* ─── 区切り線 ─── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 500px;
+    margin: 24px auto;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--gold); opacity: 0.4; }
+  .divider-diamond { color: var(--gold); font-size: 0.8rem; }
+
+  /* ─── メインコンテナ ─── */
+  #app {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── スタート画面 ─── */
+  #start-screen {
+    text-align: center;
+    padding: 20px 0 40px;
+  }
+
+  .start-card {
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(184,134,11,0.25);
+    border-radius: 12px;
+    padding: 36px 32px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 24px var(--shadow);
+  }
+
+  .start-card h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    margin-bottom: 16px;
+    letter-spacing: 0.1em;
+  }
+
+  .instruction-list {
+    text-align: left;
+    list-style: none;
+    margin: 0;
+  }
+  .instruction-list li {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    padding: 8px 0;
+    border-bottom: 1px dashed rgba(184,134,11,0.2);
+    display: flex;
+    gap: 12px;
+  }
+  .instruction-list li:last-child { border-bottom: none; }
+  .inst-num {
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    min-width: 20px;
+    padding-top: 1px;
+  }
+
+  /* ─── ボタン ─── */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--ink) 0%, #3d2d1f 100%);
+    color: var(--parchment);
+    border: none;
+    padding: 16px 48px;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem;
+    letter-spacing: 0.2em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .btn-primary:hover::before { opacity: 1; }
+  .btn-primary span { position: relative; z-index: 1; }
+
+  /* ─── プログレスバー ─── */
+  .progress-container {
+    margin-bottom: 32px;
+  }
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.8rem;
+    color: #7a6a5a;
+    margin-bottom: 8px;
+  }
+  .progress-track {
+    height: 4px;
+    background: var(--progress-bg);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ─── 設問カード ─── */
+  #question-screen { display: none; }
+
+  .question-card {
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(184,134,11,0.2);
+    border-radius: 12px;
+    padding: 36px 32px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px var(--shadow);
+    animation: fadeSlide 0.4s ease;
+  }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-number {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--gold);
+    letter-spacing: 0.3em;
+    margin-bottom: 16px;
+  }
+
+  .q-text {
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: var(--ink);
+    margin-bottom: 28px;
+  }
+
+  /* ─── 5段階選択 ─── */
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.72rem;
+    color: #7a6a5a;
+    margin-bottom: 10px;
+  }
+
+  .scale-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .scale-btn {
+    flex: 1;
+    max-width: 80px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid rgba(184,134,11,0.3);
+    background: rgba(255,255,255,0.5);
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .scale-btn:hover {
+    border-color: var(--gold);
+    background: rgba(184,134,11,0.1);
+    transform: scale(1.08);
+  }
+
+  .scale-btn.selected {
+    background: linear-gradient(135deg, var(--ink) 0%, #3d2d1f 100%);
+    border-color: var(--ink);
+    color: var(--parchment);
+    transform: scale(1.12);
+    box-shadow: 0 4px 12px rgba(26,20,16,0.3);
+  }
+
+  /* ─── ナビゲーション ─── */
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn-nav {
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-back {
+    background: transparent;
+    border: 1px solid rgba(184,134,11,0.4);
+    color: var(--gold);
+  }
+  .btn-back:hover { background: rgba(184,134,11,0.08); }
+
+  .btn-next {
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    color: var(--parchment);
+    flex: 1;
+    max-width: 200px;
+  }
+  .btn-next:hover { background: var(--gold); border-color: var(--gold); }
+  .btn-next:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ─── 結果画面 ─── */
+  #result-screen { display: none; }
+
+  .result-header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .result-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.6rem;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .result-header p {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.85rem;
+    color: #6a5a4a;
+  }
+
+  /* ─── レーダーチャート代替：バーチャート ─── */
+  .archetype-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+
+  .archetype-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: fadeSlide 0.5s ease both;
+  }
+
+  .archetype-name {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.88rem;
+    min-width: 70px;
+    text-align: right;
+    color: var(--ink);
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 24px;
+    background: var(--progress-bg);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s ease;
+    position: relative;
+  }
+
+  .bar-score {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    min-width: 28px;
+    text-align: center;
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  /* アーキタイプ別カラー */
+  .color-yoko    { background: linear-gradient(90deg, #d4a843, #f0c060); }
+  .color-koji    { background: linear-gradient(90deg, #6a7a8a, #8a9aaa); }
+  .color-senshi  { background: linear-gradient(90deg, #8b1a1a, #b03030); }
+  .color-enjo    { background: linear-gradient(90deg, #4a6741, #6a8761); }
+  .color-tanq    { background: linear-gradient(90deg, #5a4a7a, #7a6a9a); }
+  .color-hakai   { background: linear-gradient(90deg, #3d4a5c, #5d6a7c); }
+  .color-kyuai   { background: linear-gradient(90deg, #8b4560, #ab6580); }
+  .color-sozo    { background: linear-gradient(90deg, #c87520, #e09540); }
+  .color-tochi   { background: linear-gradient(90deg, #2a5a3a, #4a7a5a); }
+  .color-majutsu { background: linear-gradient(90deg, #4a2a6a, #6a4a8a); }
+  .color-kenja   { background: linear-gradient(90deg, #1a3a5a, #3a5a7a); }
+  .color-doke    { background: linear-gradient(90deg, #a06020, #c08040); }
+
+  /* ─── トップ結果カード ─── */
+  .top-result {
+    background: linear-gradient(135deg, var(--ink) 0%, #2d1f15 100%);
+    color: var(--parchment);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 28px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(26,20,16,0.3);
+  }
+
+  .top-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: var(--gold-light);
+    margin-bottom: 12px;
+  }
+
+  .top-name {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    color: var(--gold-light);
+    margin-bottom: 8px;
+  }
+
+  .top-desc {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.9rem;
+    line-height: 1.9;
+    opacity: 0.85;
+    margin-bottom: 16px;
+  }
+
+  .top-gift {
+    display: inline-block;
+    border: 1px solid rgba(212,168,67,0.5);
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.82rem;
+    color: var(--gold-light);
+    letter-spacing: 0.1em;
+  }
+
+  /* ─── 再診断ボタン ─── */
+  .btn-restart {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: transparent;
+    border: 2px solid var(--ink);
+    color: var(--ink);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.15em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 24px;
+  }
+  .btn-restart:hover { background: var(--ink); color: var(--parchment); }
+
+  /* ─── Google Forms リンクセクション ─── */
+  .share-section {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(184,134,11,0.2);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 28px;
+    text-align: center;
+  }
+  .share-section h3 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    color: var(--ink);
+  }
+  .share-section p {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.82rem;
+    color: #5a4a3a;
+    line-height: 1.7;
+  }
+
+  /* ─── フッター ─── */
+  .footer {
+    text-align: center;
+    padding: 32px 20px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.75rem;
+    color: #9a8a7a;
+    border-top: 1px solid rgba(184,134,11,0.15);
+    margin-top: 40px;
+  }
+
+  /* ─── 非公式バナー ─── */
+  .unofficial-banner {
+    background: #fdf6e3;
+    border-bottom: 1px solid rgba(184,134,11,0.3);
+    padding: 10px 20px;
+    text-align: center;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.75rem;
+    color: #7a6030;
+    line-height: 1.6;
+    position: relative;
+    z-index: 10;
+  }
+  .unofficial-banner strong {
+    background: rgba(184,134,11,0.15);
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-right: 4px;
+  }
+  .unofficial-banner a {
+    color: var(--gold);
+    text-decoration: underline;
+  }
+
+  /* ─── 免責カード ─── */
+  .disclaimer-card {
+    background: #fffdf5;
+    border: 1px solid rgba(184,134,11,0.25);
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 20px 20px 16px;
+    margin-bottom: 28px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.8rem;
+    line-height: 1.8;
+    color: #5a4a30;
+  }
+  .disclaimer-card p + p { margin-top: 8px; }
+  .disclaimer-card a {
+    color: var(--gold);
+    text-decoration: underline;
+  }
+  .disclaimer-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+
+  /* ─── note導線カード ─── */
+  .note-cta {
+    background: linear-gradient(135deg, #1a1410 0%, #2d1f15 100%);
+    border-radius: 12px;
+    padding: 28px 24px;
+    margin-top: 24px;
+    text-align: center;
+    color: var(--parchment);
+  }
+  .note-cta-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    color: var(--gold-light);
+    margin-bottom: 10px;
+  }
+  .note-cta h3 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    line-height: 1.7;
+  }
+  .note-cta p {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.82rem;
+    opacity: 0.75;
+    line-height: 1.7;
+    margin-bottom: 18px;
+  }
+  .btn-note {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--ink);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 12px 32px;
+    border-radius: 4px;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .btn-note:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+  }
+  .note-sub {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.72rem;
+    opacity: 0.5;
+    margin-top: 12px;
+  }
+
+  /* ─── レスポンシブ ─── */
+  @media (max-width: 480px) {
+    .question-card { padding: 24px 20px; }
+    .scale-btn { font-size: 0.88rem; }
+    .archetype-name { min-width: 54px; font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 非公式バナー -->
+<div class="unofficial-banner">
+  <strong>非公式・非公認ページ</strong>本ツールは書籍『英雄の旅』の読者が個人で制作したものです。出版社・著者とは一切関係ありません。
+</div>
+
+<!-- ヘッダー -->
+<header class="header">
+  <div class="header-ornament">✦ HEROIC MYTH INDEX ✦</div>
+  <h1>英雄の旅</h1>
+  <p class="subtitle">あなたの内なるアーキタイプを発見する</p>
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-diamond">◆</div>
+    <div class="divider-line"></div>
+  </div>
+  <p class="header-desc">
+    HMI（英雄神話指標）は、あなたの人生で活性化しているアーキタイプを特定し、自分自身や他者への理解を深める一助となるよう考案されたものです。72問の設問に率直にお答えください。
+  </p>
+</header>
+
+<div id="app">
+
+  <!-- ─── スタート画面 ─── -->
+  <div id="start-screen">
+    <div class="disclaimer-card">
+      <div class="disclaimer-title">⚠ このページについて</div>
+      <p>本ツールは、Carol S. Pearson著『英雄の旅』の読者が、書籍をより活用しやすくするために個人で制作した<strong>非公式・非公認の診断ページ</strong>です。出版社および著者とは一切関係がありません。</p>
+      <p>診断に使用している設問は <em>Form E of the HMI（©1990 Carol S. Pearson）</em> に基づいています。設問の著作権は原著者に帰属します。</p>
+      <p>書籍をまだお読みでない方は、ぜひ原著をお手に取ってみてください。→ <a href="https://www.amazon.co.jp/s?k=%E8%8B%B1%E9%9B%84%E3%81%AE%E6%97%85+%E3%82%AD%E3%83%A3%E3%83%AD%E3%83%AB%E3%83%BB%E3%83%94%E3%82%A2%E3%82%BD%E3%83%B3" target="_blank" rel="noopener">Amazonで確認する</a></p>
+    </div>
+    <div class="start-card">
+      <h2>回答方法</h2>
+      <ul class="instruction-list">
+        <li><span class="inst-num">Ⅰ</span><span>各設問について、5つの選択肢の中からあなたに最も近いものを選んでください。<br>1＝あてはまらない ／ 5＝あてはまる</span></li>
+        <li><span class="inst-num">Ⅱ</span><span>すばやく、あまり考え込まずに回答してください。設問は飛ばさず、必ずすべてに回答します。</span></li>
+        <li><span class="inst-num">Ⅲ</span><span>正解・不正解はありません。直感を大切にして答えてください。</span></li>
+        <li><span class="inst-num">Ⅳ</span><span>全72問で、所要時間は約5〜10分です。</span></li>
+      </ul>
+    </div>
+    <button class="btn-primary" onclick="startTest()"><span>診断を始める</span></button>
+  </div>
+
+  <!-- ─── 設問画面 ─── -->
+  <div id="question-screen">
+    <div class="progress-container">
+      <div class="progress-info">
+        <span id="progress-text">1 / 72</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="question-card">
+      <div class="q-number" id="q-number">QUESTION 01</div>
+      <p class="q-text" id="q-text"></p>
+      <div class="scale-labels">
+        <span>あてはまらない</span>
+        <span>あてはまる</span>
+      </div>
+      <div class="scale-buttons" id="scale-buttons">
+        <button class="scale-btn" onclick="select(1)">1</button>
+        <button class="scale-btn" onclick="select(2)">2</button>
+        <button class="scale-btn" onclick="select(3)">3</button>
+        <button class="scale-btn" onclick="select(4)">4</button>
+        <button class="scale-btn" onclick="select(5)">5</button>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-nav btn-back" id="btn-back" onclick="prevQ()">← 戻る</button>
+      <button class="btn-nav btn-next" id="btn-next" onclick="nextQ()" disabled>次へ →</button>
+    </div>
+  </div>
+
+  <!-- ─── 結果画面 ─── -->
+  <div id="result-screen">
+    <div class="result-header">
+      <h2>診断結果</h2>
+      <p>あなたのアーキタイプ・プロフィール</p>
+    </div>
+
+    <div id="top-result-card"></div>
+    <div class="archetype-bars" id="archetype-bars"></div>
+
+    <!-- note導線 -->
+    <div class="note-cta" id="note-cta-block">
+      <div class="note-cta-eyebrow">WANT TO KNOW MORE?</div>
+      <h3 id="note-cta-title">あなたのアーキタイプについて、<br>noteでもっと詳しく書いています</h3>
+      <p>各アーキタイプの特徴・ギフト・影の側面を、回復とセルフケアの視点から掘り下げています。</p>
+      <a href="https://note.com/nana77_journey" target="_blank" rel="noopener" class="btn-note">noteで読む →</a>
+      <p class="note-sub">nana77_journey のnoteへ移動します</p>
+    </div>
+
+    <button class="btn-restart" onclick="restart()">もう一度診断する</button>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <p>本ツールは書籍『英雄の旅』読者による<strong>非公式・非公認の個人制作ページ</strong>です。出版社・著者とは一切関係ありません。</p>
+  <p style="margin-top:6px;">Form E of the HMI ©1990 Carol S. Pearson ／ 設問の著作権は原著者に帰属します。</p>
+  <p style="margin-top:6px;">診断結果は参考情報です。優れたアーキタイプも劣ったアーキタイプも存在しません。</p>
+</footer>
+
+<script>
+// ─────────────────────────────────────────
+// データ定義
+// ─────────────────────────────────────────
+
+const questions = [
+  "勝手に判断せずに情報収集を行なう。",
+  "物事がめまぐるしく変化するので、自分のいまの状況がよくわからない。",
+  "自分が癒される過程があるから、他人を癒すことができる。",
+  "人の期待を裏切ってしまったことがある。",
+  "安全だと感じている。",
+  "不安は脇において、やるべきことをやる。",
+  "自分の欲求よりも他人の欲求を優先する。",
+  "どんな状況でも自分に忠実であろうと心がけている。",
+  "単調な日々が続くと、新しいことをはじめてみたくなる。",
+  "他人の世話をすることに喜びを感じる。",
+  "まわりからはおもしろい人間だと思われている。",
+  "エロティックな気分だ。",
+  "故意に人を傷つけようとする人間なんていないと思う。",
+  "子供のころに育児放棄や虐待に遭った。",
+  "与えられるよりも、与えるときのほうが幸せな気分になる。",
+  "「愛する人を失ったとしても、人を愛したことがない人生を送るよりはいい」という考え方に共感する。",
+  "あるがままの人生を受け入れている。",
+  "長期的視点から物事を客観的に見るようにしている。",
+  "自分の人生をつくっている段階だ。",
+  "物の見方は1つではなく、優れた方法がたくさんあると思っている。",
+  "今の私は、かつての自分が考えていたような人間ではない。",
+  "人生は苦悩の連続だと思う。",
+  "霊的な力のおかげで能力を発揮できている。",
+  "自分のために行動するよりも他人のために行動するほうが簡単だ。",
+  "人との関係を通じて満足感を得る。",
+  "みんなが私の指示を待っている。",
+  "権力を握っている人たちが恐い。",
+  "決まりごとを厳密に守ろうとは思わない。",
+  "人と人との橋渡しをするのが好きだ。",
+  "見捨てられたように感じている。",
+  "難しいことを苦もなく成し遂げたことが何度もある。",
+  "自分にはリーダーの資質があると思う。",
+  "自分を向上させる方法を模索している最中だ。",
+  "誰かが自分の面倒をみてくれると思う。",
+  "責任を負う立場にいるほうがいい。",
+  "見かけに惑わされずに真実を見つけようと努めている。",
+  "心の内側を変えれば人生も変わる。",
+  "人や物を資源として育んでいる。",
+  "自分の信念を守るためなら、個人的リスクをもいとわない。",
+  "不正行為を黙って見過ごすことができない。",
+  "常に客観的でいようと心がけている。",
+  "自分が触媒となって周囲に変化をもたらすことが多い。",
+  "人を笑わせるのが楽しい。",
+  "目標達成のために自制心をはたらかせる。",
+  "たいていの人間は愛すべき存在だと思う。",
+  "その人の能力にふさわしい仕事を割り当ててあげるのが得意だ。",
+  "自立を守ることは絶対に譲れない条件だ。",
+  "人も物も、この世のあらゆることが相互に結びついているのだと思う。",
+  "世の中は安全な場所だ。",
+  "信頼していた人たちから見捨てられた。",
+  "落ち着かない気分だ。",
+  "自分に合わなくなったものは手放すようにしている。",
+  "深刻な顔をしている人たちをなごませてあげるのが好きだ。",
+  "ちょっとした混沌は魂にとって有益だと思う。",
+  "自分を犠牲にして人助けをしたからこそ、以前よりもよい人間になれた。",
+  "穏やかな気分だ。",
+  "攻撃してくる相手には立ち向かう。",
+  "状況を変化させるのが好きだ。",
+  "人生のあらゆる局面において、成功の鍵は自制心にある。",
+  "ひらめくことが多い。",
+  "望んだとおりの人生を送っていない。",
+  "どこかにもっといい世界があるのではないかと感じている。",
+  "私が出会う人間は信用できる人たちばかりだ。",
+  "夢を実現させようとチャレンジしている最中だ。",
+  "必要なものはいつか必ず手に入る。",
+  "何かを壊したい気分だ。",
+  "常に万人の利益を念頭に置いて状況に対処しようとしている。",
+  "なかなかノーと言うことができない。",
+  "名案が次々と浮かんでくるのに、それを実行に移す時間がない。",
+  "常にもっといいものはないかと探している。",
+  "大切に思っていた相手に失望させられたことがある。",
+  "何かを探すという行為は、それを見つけるのに負けないぐらい重要なことだ。"
+];
+
+// アーキタイプ定義: [名前, 問番号配列(1-indexed), 色クラス, 目指すもの, ギフト, 説明]
+const archetypes = [
+  { name:"幼子",  qs:[5,13,34,49,63,65], color:"yoko",    goal:"安全であり続けること", gift:"信じる気持ち・楽観主義", desc:"あなたは根源的な楽観主義と信頼を持ち、世界に対して純粋な好奇心を向けます。どんな状況でも可能性を信じる力があなたの最大の強みです。" },
+  { name:"孤児",  qs:[14,22,27,30,50,71], color:"koji",   goal:"安全の回復",           gift:"自立心・現実主義",       desc:"あなたは痛みや裏切りを知ることで、現実を直視する強さを身につけました。連帯の力と回復力があなたの旅を支えます。" },
+  { name:"戦士",  qs:[6,39,40,44,57,59], color:"senshi",  goal:"勝利",                 gift:"勇気・自制心",           desc:"あなたは信念のために戦い、困難に立ち向かう勇気があります。高い目標を設定し、それを達成するための意志力を持っています。" },
+  { name:"援助者",qs:[7,10,15,24,55,68], color:"enjo",    goal:"人を助ける",           gift:"情みの心・寛容な心",     desc:"あなたは他者の痛みに共感し、無条件で愛を与えることができます。人々の世話をする中に深い喜びを見出しています。" },
+  { name:"探求者",qs:[33,47,51,62,70,72], color:"tanq",   goal:"よりよい人生の探求",  gift:"自律・野望",             desc:"あなたは現状に満足せず、より深い自己と真実を追い求めます。自由と独立心があなたの旅の原動力です。" },
+  { name:"破壊者",qs:[2,4,21,52,61,66],  color:"hakai",   goal:"変身",                 gift:"謙虚さ",                 desc:"あなたは古い自己を手放し、本質的な変容を恐れません。終わりの中に新しい始まりを見出す力があります。" },
+  { name:"求愛者",qs:[12,16,17,25,29,45], color:"kyuai",  goal:"至福",                 gift:"情熱・献身",             desc:"あなたは深い繋がりと愛を大切にします。美しさと喜びを追求し、関係性の中に人生の意味を見出します。" },
+  { name:"創造者",qs:[8,19,31,60,64,69], color:"sozo",    goal:"アイデンティティ",     gift:"個性・使命感",           desc:"あなたは自分だけの世界を創り上げる力があります。アイデアが次々と湧き出し、独自の表現を通じて自己を実現します。" },
+  { name:"統治者",qs:[26,32,35,38,46,67], color:"tochi",  goal:"秩序",                 gift:"責任感・管理",           desc:"あなたはリーダーシップを持ち、物事を組織化する才能があります。責任感と全体への配慮があなたを動かします。" },
+  { name:"魔術師",qs:[3,23,37,42,48,58], color:"majutsu", goal:"変容",                 gift:"自分だけのパワー",       desc:"あなたは変容のプロセスを理解し、触媒として周囲に変化をもたらします。内と外をつなぐ力があなたの本質です。" },
+  { name:"賢者",  qs:[1,18,20,36,41,56], color:"kenja",   goal:"真実",                 gift:"英知・支縛からの解放",   desc:"あなたは真実を追求し、深く客観的に物事を見ます。知識と洞察を通じて自己と世界を理解しようとします。" },
+  { name:"道化",  qs:[9,11,28,43,53,54], color:"doke",    goal:"享楽",                 gift:"喜び・自由",             desc:"あなたはユーモアと遊び心で人々を笑顔にします。軽やかさと自由が、あなたの知恵と贈り物です。" },
+];
+
+// ─────────────────────────────────────────
+// 状態
+// ─────────────────────────────────────────
+let answers = new Array(72).fill(0);
+let current = 0;
+
+// ─────────────────────────────────────────
+// 画面切替
+// ─────────────────────────────────────────
+function show(id) {
+  ['start-screen','question-screen','result-screen'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  document.getElementById(id).style.display = 'block';
+}
+
+function startTest() {
+  answers = new Array(72).fill(0);
+  current = 0;
+  show('question-screen');
+  renderQ();
+}
+
+function restart() {
+  show('start-screen');
+}
+
+// ─────────────────────────────────────────
+// 設問レンダリング
+// ─────────────────────────────────────────
+function renderQ() {
+  const i = current;
+  document.getElementById('q-number').textContent = `QUESTION ${String(i+1).padStart(2,'0')}`;
+  document.getElementById('q-text').textContent = questions[i];
+
+  // スケールボタン更新
+  const btns = document.querySelectorAll('.scale-btn');
+  btns.forEach((btn, idx) => {
+    btn.classList.toggle('selected', answers[i] === idx+1);
+  });
+
+  // 進捗
+  const pct = Math.round((i / 72) * 100);
+  document.getElementById('progress-text').textContent = `${i+1} / 72`;
+  document.getElementById('progress-pct').textContent = `${pct}%`;
+  document.getElementById('progress-fill').style.width = `${pct}%`;
+
+  // ボタン
+  document.getElementById('btn-back').style.visibility = i === 0 ? 'hidden' : 'visible';
+  document.getElementById('btn-next').disabled = answers[i] === 0;
+  document.getElementById('btn-next').textContent = i === 71 ? '結果を見る →' : '次へ →';
+}
+
+function select(val) {
+  answers[current] = val;
+  const btns = document.querySelectorAll('.scale-btn');
+  btns.forEach((btn, idx) => {
+    btn.classList.toggle('selected', idx+1 === val);
+  });
+  document.getElementById('btn-next').disabled = false;
+  // 少し待ってから自動で次へ
+  setTimeout(() => nextQ(), 300);
+}
+
+function nextQ() {
+  if (answers[current] === 0) return;
+  if (current === 71) {
+    showResult();
+    return;
+  }
+  current++;
+  renderQ();
+  document.querySelector('.question-card').style.animation = 'none';
+  void document.querySelector('.question-card').offsetWidth;
+  document.querySelector('.question-card').style.animation = 'fadeSlide 0.4s ease';
+}
+
+function prevQ() {
+  if (current === 0) return;
+  current--;
+  renderQ();
+}
+
+// ─────────────────────────────────────────
+// 結果計算
+// ─────────────────────────────────────────
+function calcScores() {
+  return archetypes.map(at => {
+    const total = at.qs.reduce((sum, q) => sum + (answers[q-1] || 0), 0);
+    return { ...at, score: total };
+  });
+}
+
+function showResult() {
+  const scores = calcScores().sort((a,b) => b.score - a.score);
+  const max = scores[0];
+
+  // トップカード
+  const topCard = document.getElementById('top-result-card');
+  topCard.innerHTML = `
+    <div class="top-result">
+      <div class="top-label">YOUR PRIMARY ARCHETYPE</div>
+      <div class="top-name">${max.name}</div>
+      <p class="top-desc">${max.desc}</p>
+      <div class="top-gift">✦ ギフト：${max.gift}</div>
+    </div>
+  `;
+
+  // バーチャート（スコア順）
+  const barsEl = document.getElementById('archetype-bars');
+  barsEl.innerHTML = '';
+  scores.forEach((at, i) => {
+    const pct = Math.round((at.score / 30) * 100);
+    const row = document.createElement('div');
+    row.className = 'archetype-row';
+    row.style.animationDelay = `${i * 0.06}s`;
+    row.innerHTML = `
+      <div class="archetype-name">${at.name}</div>
+      <div class="bar-track">
+        <div class="bar-fill color-${at.color}" style="width:0%" data-pct="${pct}"></div>
+      </div>
+      <div class="bar-score">${at.score}</div>
+    `;
+    barsEl.appendChild(row);
+  });
+
+  show('result-screen');
+
+  // note CTAをアーキタイプ名に合わせて更新
+  document.getElementById('note-cta-title').innerHTML =
+    `「${max.name}」タイプのあなたへ。<br>noteでもっと詳しく書いています`;
+
+  // バーアニメーション
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(el => {
+      el.style.width = el.dataset.pct + '%';
+    });
+  }, 200);
+}
+</script>
+</body>
+</html>
